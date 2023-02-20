@@ -216,8 +216,11 @@ class Index extends BaseIndex
                     "filter" => [],
                     "must" => [
                         "multi_match" => [
+                            "type" => "phrase",
                             "query" => $query,
                             "fields" => $fields,
+                            "operator" => ($this->config["es_multi_match"]["operator"] ?? "or"),
+                            "type" => ($this->config["es_multi_match"]["type"] ?? "best_fields"),
                         ],
                     ],
                 ],

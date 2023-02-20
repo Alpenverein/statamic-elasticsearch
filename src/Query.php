@@ -3,8 +3,12 @@
 namespace TheHome\StatamicElasticsearch;
 
 use Illuminate\Support\Collection;
+use Statamic\Contracts\Search\Result;
+use Statamic\Search\PlainResult;
 use Statamic\Search\QueryBuilder;
 use Statamic\Facades\Data;
+use Statamic\Search\Searchables\Providers;
+use Statamic\Support\Str;
 
 class Query extends QueryBuilder
 {
@@ -59,7 +63,7 @@ class Query extends QueryBuilder
     {
         return $this->getBaseItems();
     }
-    
+
     /**
      * Method getBaseItems
      *
@@ -69,17 +73,30 @@ class Query extends QueryBuilder
     {
         $results = $this->getSearchResults($this->query);
 
-        if (!$this->withData) {
-            return new \Statamic\Data\DataCollection($results);
+        if (! $this->withData) {
+            return $this->collect($results)
+                ->map(fn ($result) => new PlainResult($result))
+                ->each(fn (Result $result, $i) => $result->setIndex($this->index)->setScore($results[$i]['search_score'] ?? null));
         }
 
-        return $this->collect($results)
-            ->map(function ($result) {
-                $data = Data::find($result['id']);
-                $data->search_score = $result['search_score'];
-                return $data;
-            })
-            ->filter()
+        return $this->collect($results)->groupBy(function ($result) {
+            return Str::before($result['id'], '::');
+        })->flatMap(function ($results, $prefix) {
+            $results = $results->keyBy('id');
+            $ids = $results->map(fn ($result) => Str::after($result['id'], $prefix.'::'))->values()->all();
+
+            return app(Providers::class)
+                ->getByPrefix($prefix)
+                ->find($ids)
+                ->map->toSearchResult()
+                ->each(function (Result $result) use ($results) {
+                    return $result
+                        ->setIndex($this->index)
+                        ->setRawResult($raw = $results[$result->getReference()])
+                        ->setScore($raw['search_score'] ?? null);
+                });
+        })
+            ->sortByDesc->getScore()
             ->values();
     }
 
