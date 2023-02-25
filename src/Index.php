@@ -75,6 +75,17 @@ class Index extends BaseIndex
     }
 
     /**
+     * docExists
+     * Check if the doc is in the index.
+     * @param mixed $document
+     * @return bool
+     */
+    private function docExists($params): bool
+    {
+        return ($this->client->exists($params)->getStatusCode() == 200 );
+    }
+
+    /**
      * delete
      *
      * @param  mixed $document
@@ -84,7 +95,9 @@ class Index extends BaseIndex
     {
         $params = $this->indexName();
         $params["id"] = $document->reference();
-        $this->client->delete($params);
+        if($this->docExists($params)){
+            $this->client->delete($params);
+        }
     }
 
     public function exists(): bool
