@@ -225,17 +225,10 @@ class Index extends BaseIndex
             "size" => $limit,
             "_source" => false,
             "query" => [
-                "bool" => [
-                    "filter" => [],
-                    "must" => [
-                        "multi_match" => [
-                            "type" => "phrase",
-                            "query" => $query,
-                            "fields" => $fields,
-                            "operator" => ($this->config["es_multi_match"]["operator"] ?? "or"),
-                            "type" => ($this->config["es_multi_match"]["type"] ?? "best_fields"),
-                        ],
-                    ],
+                "simple_query_string" => [
+                    "query" => $query,
+                    "fields" => $fields,
+                    "default_operator" => ($this->config["parameters"]["default_operator"] ?? "OR")
                 ],
             ],
         ];
