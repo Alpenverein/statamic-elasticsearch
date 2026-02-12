@@ -111,7 +111,7 @@ class Index extends BaseIndex
         return $response->asBool();
     }
 
-    protected function insertDocuments(
+    public function insertDocuments(
         \Statamic\Search\Documents $documents
     ): void {
         if (!$this->exists()) {
